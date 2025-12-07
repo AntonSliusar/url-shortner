@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"url-shortner/internal/config"
 	"url-shortner/internal/logger"
-	"url-shortner/internal/storage"
+	"url-shortner/internal/repository"
 )
 
 func main() {
 	logger.InitLogger("local")
 	cfg := config.LoadConfig()
-	dbStorage := storage.NewStorage(*cfg)
+	dbStorage := repository.NewStorage(*cfg)
 	// Example usage
 	dbStorage.SaveURL("https://example.com", "exmpl")
 	originalURL := dbStorage.GetURL("exmpl")

@@ -34,48 +34,54 @@ func NewStorage(cfg config.Config) *URLRepository {
 	return &URLRepository{db: db}
 }
 
-func (r *URLRepository) SaveURL(urlToSave string, alias string) {
+func (r *URLRepository) SaveURL(urlToSave string, alias string) error {
 	query := "INSERT INTO urls (original_url, alias) VALUES ($1, $2)"
 	_, err := r.db.Exec(query, urlToSave, alias)
 	if err != nil {
 		slog.Error("Failed to save URL:", "error:", err)
+		return err
 	}
+	return nil
 }
 
-func (r *URLRepository) GetURL(alias string) string {
+func (r *URLRepository) GetURL(alias string) (string, error) {
 	var originalURL string
 	query := "SELECT original_url FROM urls WHERE alias = $1"
 	err := r.db.QueryRow(query, alias).Scan(&originalURL)
 	if err != nil {
 		slog.Error("Failed to get URL:", "error:", err)
-		return ""
+		return "", err
 	}
-	return originalURL
+	return originalURL, nil
 }
 
-func (r *URLRepository) UpdateURL(alias string, newURL string) {
+func (r *URLRepository) UpdateURL(alias string, newURL string) error{
 	query := "UPDATE urls SET original_url = $1 WHERE alias = $2"
 	_, err := r.db.Exec(query, newURL, alias)
 	if err != nil {
 		slog.Error("Failed to update URL:", "error:", err)
+		return err
 	}
+	return nil
 }	
 
-func (r *URLRepository) DeleteURL(alias string) {
+func (r *URLRepository) DeleteURL(alias string) error{
 	query := "DELETE FROM urls WHERE alias = $1"
 	_, err := r.db.Exec(query, alias)
 	if err != nil {
 		slog.Error("Failed to delete URL:", "error:", err)
+		return err
 	}
+	return nil
 }
 
-func (r *URLRepository) GetAllURLs() map[string]string {
+func (r *URLRepository) GetAllURLs() (map[string]string, error) {
 	urls := make(map[string]string)
 	query := "SELECT alias, original_url FROM urls"
 	rows, err := r.db.Query(query)
 	if err != nil {
 		slog.Error("Failed to get all URLs:", "error:", err)
-		return urls
+		return urls, err
 	}
 	defer rows.Close()
 
@@ -88,6 +94,6 @@ func (r *URLRepository) GetAllURLs() map[string]string {
 		}
 		urls[alias] = originalURL
 	}
-	return urls
+	return urls, nil
 }
 
