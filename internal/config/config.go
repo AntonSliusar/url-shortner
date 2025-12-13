@@ -9,17 +9,27 @@ import (
 
 type Config struct {
 	HTTPServer HTTPServer `mapstructure:"http_server"`
-	Database   Database     `mapstructure:"database"`
+	URLDatabase   URLDatabase     `mapstructure:"url_database"`
+	UserDatabase   UserDatabase     `mapstructure:"user_database"`
 }
 
 type HTTPServer struct {
 	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
+	Port        string    `mapstructure:"port"`
 	Timeout     int    `mapstructure:"timeout"`
 	IdleTimeout int    `mapstructure:"idle_timeout"`
 }
 
-type Database struct {
+type URLDatabase struct {
+	Host string `mapstructure:"host"`
+	Port string    `mapstructure:"port"`
+	User string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DBName string `mapstructure:"dbname"`	
+	SSL  string `mapstructure:"ssl"`
+}
+
+type UserDatabase struct {
 	Host string `mapstructure:"host"`
 	Port string    `mapstructure:"port"`
 	User string `mapstructure:"user"`
@@ -44,7 +54,8 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 	godotenv.Load()
-	config.Database.Password = os.Getenv("DB_PASSWORD")
+	config.URLDatabase.Password = os.Getenv("DB_PASSWORD")
+	config.UserDatabase.Password = os.Getenv("DB_PASSWORD")
 
 	return &config
 }

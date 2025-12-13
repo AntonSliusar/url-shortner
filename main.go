@@ -1,24 +1,37 @@
 package main
 
 import (
-	"fmt"
+	_ "url-shortner/docs"
+	"url-shortner/internal/auth"
 	"url-shortner/internal/config"
+	"url-shortner/internal/handler"
 	"url-shortner/internal/logger"
 	"url-shortner/internal/repository"
+	"url-shortner/internal/server"
+	"url-shortner/internal/service"
 )
+
+// @title URL-Shortner API
+// @version 1.0
+// @description This is a simple URL shortener service API.
+
+// @host localhost:8080
+// @BasePath /
+
+// @SecurityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 func main() {
 	logger.InitLogger("local")
 	cfg := config.LoadConfig()
-	dbStorage := repository.NewStorage(*cfg)
-	// Example usage
-	dbStorage.SaveURL("https://example.com", "exmpl")
-	originalURL := dbStorage.GetURL("exmpl")
-	fmt.Println("Original URL:", originalURL)
 
-	dbStorage.UpdateURL("exmpl", "https://example.org")
-	updatedURL := dbStorage.GetURL("exmpl")
-	fmt.Println("Updated URL:", updatedURL)
-	
-	///
+	urlRepo := repository.NewURLRepository(cfg)
+	urlService := service.NewService(urlRepo)
+	urlHandler := handler.NewURLHandler(urlService)
+
+	userRepo := repository.NewUserRepository(cfg)
+	userService := service.NewUserService(userRepo)
+	authHandler := auth.NewUserHandler(userService)
+	server.NewServer(urlHandler, authHandler, cfg)	
 }

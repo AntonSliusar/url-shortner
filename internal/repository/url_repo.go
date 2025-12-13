@@ -13,15 +13,15 @@ type URLRepository struct {
 	db *sql.DB
 }
 
-func NewStorage(cfg config.Config) *URLRepository {
+func NewURLRepository(cfg *config.Config) *URLRepository {
 	url := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.DBName,
-		cfg.Database.SSL,
+		cfg.URLDatabase.Host,
+		cfg.URLDatabase.Port,
+		cfg.URLDatabase.User,
+		cfg.URLDatabase.Password,
+		cfg.URLDatabase.DBName,
+		cfg.URLDatabase.SSL,
 	)
 	db, err := sql.Open("postgres", url)
 	if err != nil {
