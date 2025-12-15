@@ -10,7 +10,7 @@ import (
 )
 const (
 	registPurpose = "registration"
-	loginPurpose = "logein"
+	loginPurpose = "login"
 )
 	
 
@@ -102,7 +102,7 @@ func (h *AuthHandler) VerifyRegistration(c echo.Context) error {
 
 // Login godoc
 // @Summary Login user
-// @Description Authenticate user and return JWT token
+// @Description Authenticate user and send code to email
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -122,7 +122,7 @@ func (h *AuthHandler) LoginUser(c echo.Context) error {
 	if !utils.CheckPasswordHash(req.Password, user.PasswordHash) {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
 	}
-	err = h.otpService.SendEmailCode(user.Email, registPurpose)
+	err = h.otpService.SendEmailCode(user.Email, loginPurpose)
 	if err != nil {	
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -130,7 +130,7 @@ func (h *AuthHandler) LoginUser(c echo.Context) error {
 }
 
 // @Summary ConfirmLogin
-// @Description Confirm login with email code
+// @Description Confirm login with email code and return JWT
 // @Tags auth
 // @Accept json
 // @Produce json

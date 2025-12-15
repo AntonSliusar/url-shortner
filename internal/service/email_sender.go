@@ -15,15 +15,17 @@ type SMPTSender struct {
 	Port     string
 	Username string
 	Password string
+	MailFrom string
 }
 
 // TODO: need config
 func NewSMPTSender() *SMPTSender {
 	return &SMPTSender{
-		Host:     "localhost",
-		Port:     "1025",
-		Username: "noreply@mylocalserver.dev",
-		Password: "",
+		Host:     "sandbox.smtp.mailtrap.io",
+		Port:     "2525",
+		Username: "0df92e2a922276",
+		Password: "4122fe43d571cb",
+		MailFrom: "from@mail.com",
 	}
 }
 
