@@ -7,7 +7,7 @@ definitions:
       password:
         type: string
     type: object
-  auth.UserRequest:
+  auth.RegisterRequest:
     properties:
       email:
         type: string
@@ -24,6 +24,16 @@ definitions:
         type: string
       url:
         type: string
+    type: object
+  models.VerifyCodeInput:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
     type: object
 host: localhost:8080
 info:
@@ -73,7 +83,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/auth.UserRequest'
+          $ref: '#/definitions/auth.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -96,6 +106,78 @@ paths:
               type: string
             type: object
       summary: RegisterUser
+      tags:
+      - auth
+  /auth/verify-login:
+    post:
+      consumes:
+      - application/json
+      description: Confirm login with email code
+      parameters:
+      - description: email and code
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyCodeInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: ConfirmLogin
+      tags:
+      - auth
+  /auth/verify-registration:
+    post:
+      consumes:
+      - application/json
+      description: Confirm registration with email code
+      parameters:
+      - description: email and code
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyCodeInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: ConfirmRegistration
       tags:
       - auth
   /urls:

@@ -32,6 +32,9 @@ func main() {
 
 	userRepo := repository.NewUserRepository(cfg)
 	userService := service.NewUserService(userRepo)
-	authHandler := auth.NewUserHandler(userService)
+	otpRepo := repository.NewOTPRepository()
+	emailSender := service.NewSMPTSender()
+	otpService := service.NewOTPService(otpRepo, emailSender)
+	authHandler := auth.NewUserHandler(userService, otpService)
 	server.NewServer(urlHandler, authHandler, cfg)	
 }

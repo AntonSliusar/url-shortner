@@ -26,3 +26,7 @@ func (s *UserService) GetUserByEmail(email string) (models.User, error) {
 	return s.userRepo.GetUserByEmail(email)
 }
 
+func(s *UserService) EmailVerifiedTrue(email string) error {
+	return s.userRepo.EmailVerifiedTrue(email)
+}
+

@@ -8,9 +8,15 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+const (
+	registPurpose = "registration"
+	loginPurpose = "logein"
+)
+	
 
 type AuthHandler struct {
 	userService *service.UserService
+	otpService *service.OTPService
 }
 
 type RegisterRequest struct {
@@ -25,8 +31,11 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func NewUserHandler(userService *service.UserService) *AuthHandler {
-	return &AuthHandler{userService: userService}
+func NewUserHandler(userService *service.UserService, otpService *service.OTPService) *AuthHandler {
+	return &AuthHandler{
+		userService: userService,
+		otpService: otpService,
+	}
 }
 
 // @Summary RegisterUser
@@ -34,7 +43,7 @@ func NewUserHandler(userService *service.UserService) *AuthHandler {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param input body UserRequest true "user registration request"
+// @Param input body RegisterRequest true "user registration request"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -58,7 +67,37 @@ func (h *AuthHandler) RegisterUser(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-	return c.JSON(http.StatusOK, map[string]string{"result": "User registered successsfully"})
+	err = h.otpService.SendEmailCode(user.Email, registPurpose)
+	if err != nil {	
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"result": "Check email code to complete registration"})
+}
+
+// @Summary ConfirmRegistration
+// @Description Confirm registration with email code
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body models.VerifyCodeInput true "email and code"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/verify-registration [post]
+func (h *AuthHandler) VerifyRegistration(c echo.Context) error {
+	var input models.VerifyCodeInput
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string] string {"error": err.Error()})
+	}
+	res, err := h.otpService.VerifyEmailCode(input.Email, registPurpose, input.Code)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error" : err.Error()})
+	}
+	if !res {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error" : "invalid code"})
+	}
+	h.userService.EmailVerifiedTrue(input.Email)
+	return c.JSON(http.StatusOK, map[string]string{"result" : "Registration complete"})
 }
 
 // Login godoc
@@ -82,6 +121,39 @@ func (h *AuthHandler) LoginUser(c echo.Context) error {
 	}
 	if !utils.CheckPasswordHash(req.Password, user.PasswordHash) {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
+	}
+	err = h.otpService.SendEmailCode(user.Email, registPurpose)
+	if err != nil {	
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"result": "Check email code to complete login"})
+}
+
+// @Summary ConfirmLogin
+// @Description Confirm login with email code
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body models.VerifyCodeInput true "email and code"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/verify-login [post]
+func (h *AuthHandler) VerifyLogin(c echo.Context) error {
+	var input models.VerifyCodeInput 
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string {"error": err.Error()})
+	}
+	user, err := h.userService.GetUserByEmail(input.Email)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email"})
+	}
+	res, err := h.otpService.VerifyEmailCode(input.Email, loginPurpose, input.Code)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
+	}
+	if !res {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
 	}
 	token, err := GenerateToken(user)
 	if err != nil {

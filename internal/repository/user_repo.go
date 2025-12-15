@@ -62,3 +62,13 @@ func (r *UserRepository) GetUserByEmail(email string) (models.User, error) {
 	}
 	return user, nil
 }
+
+func (r *UserRepository) EmailVerifiedTrue(email string) error{
+	query := "UPDATE users SET email_verified = true WHERE email = $1"
+	_, err := r.db.Exec(query, email)
+	if err != nil {
+		slog.Error("Failde to update email_verified", "error", err)
+		return err
+	}
+	return nil
+}

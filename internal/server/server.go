@@ -21,7 +21,9 @@ func NewServer(urlHandler *handler.URLHandler, authHandler *auth.AuthHandler, cf
 
 	authRoutes := e.Group("/auth")
 	authRoutes.POST("/register", authHandler.RegisterUser)
+	authRoutes.POST("/verify-registration", authHandler.VerifyRegistration)
 	authRoutes.POST("/login", authHandler.LoginUser)
+	authRoutes.POST("/verify-login", authHandler.VerifyLogin)
 
 	urlRoutes := e.Group("/urls", middleware.JWTMiddleware)
 	urlRoutes.POST("", urlHandler.SaveURL)
