@@ -42,11 +42,49 @@ info:
   title: URL-Shortner API
   version: "1.0"
 paths:
+  /auth/google/callback:
+    get:
+      description: Get token from Google, registration or login
+      parameters:
+      - description: Authorization code provided by Google
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State string for CSRF protection
+        in: query
+        name: state
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Google OAuth2 Callback
+      tags:
+      - Auth
+  /auth/google/login:
+    get:
+      operationId: google-login
+      responses:
+        "307":
+          description: Redirect to Google
+      summary: Login via Google
+      tags:
+      - Auth
   /auth/login:
     post:
       consumes:
       - application/json
-      description: Authenticate user and return JWT token
+      description: Authenticate user and send code to email
       parameters:
       - description: login credentials
         in: body
@@ -65,6 +103,18 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -112,7 +162,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Confirm login with email code
+      description: Confirm login with email code and return JWT
       parameters:
       - description: email and code
         in: body

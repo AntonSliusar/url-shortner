@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"url-shortner/internal/models"
 	"url-shortner/internal/service"
 	"url-shortner/internal/utils"
 
 	"github.com/labstack/echo/v4"
+	"golang.org/x/oauth2"
 )
 const (
 	registPurpose = "registration"
@@ -17,6 +20,7 @@ const (
 type AuthHandler struct {
 	userService *service.UserService
 	otpService *service.OTPService
+	oauthCfg *oauth2.Config
 }
 
 type RegisterRequest struct {
@@ -31,10 +35,11 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func NewUserHandler(userService *service.UserService, otpService *service.OTPService) *AuthHandler {
+func NewAuthHandler(userService *service.UserService, otpService *service.OTPService) *AuthHandler {
 	return &AuthHandler{
 		userService: userService,
 		otpService: otpService,
+		oauthCfg: GetGoogleOAuthConfig(),
 	}
 }
 
@@ -109,6 +114,8 @@ func (h *AuthHandler) VerifyRegistration(c echo.Context) error {
 // @Param input body LoginRequest true "login credentials"
 // @Success 200 {object} map[string]string "token"
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /auth/login [post]
 func (h *AuthHandler) LoginUser(c echo.Context) error {
 	var req LoginRequest
@@ -160,4 +167,44 @@ func (h *AuthHandler) VerifyLogin(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"token": token})
+}
+
+
+func (h *AuthHandler) GoogleLogin(c echo.Context) error {
+	url := h.oauthCfg.AuthCodeURL("random-state-string") //state must be randomly generated
+	return c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *AuthHandler) GoogleCallBack(c echo.Context) error {
+	state := c.QueryParam("state")
+	if state != "random-state-string" {
+		return c.JSON(http.StatusBadRequest, map[string]string {"error": "state mismatch"})
+	}
+
+	code := c.QueryParam("code")
+	token, err := h.oauthCfg.Exchange(context.Background(), code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string {"error": "code exchange failed"})
+	}
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failde to get user info"})
+	}
+	defer resp.Body.Close()
+
+	var googleUser struct {
+		Email string `json:"email"`
+		Name string `json:"name"`
+		ID string `json:"id"`
+	}
+	json.NewDecoder(resp.Body).Decode(&googleUser)
+	user, err := h.userService.HandleGoogleUser(googleUser.Email, googleUser.Name, googleUser.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	JWTToken, err := GenerateToken(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"token": JWTToken})
 }

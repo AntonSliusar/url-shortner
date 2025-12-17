@@ -35,6 +35,6 @@ func main() {
 	otpRepo := repository.NewOTPRepository()
 	emailSender := service.NewSMPTSender()
 	otpService := service.NewOTPService(otpRepo, emailSender)
-	authHandler := auth.NewUserHandler(userService, otpService)
+	authHandler := auth.NewAuthHandler(userService, otpService)
 	server.NewServer(urlHandler, authHandler, cfg)	
 }
