@@ -11,11 +11,19 @@ import (
 
 var ErrNotFound = errors.New("resource not found in database")
 
-type UserRepository struct {
+type UserRepository interface {
+	CreateUser(user models.User) error
+	CreateGoogleUser(user models.User) error
+	GetUserByEmail(email string) (models.User, error)
+	GetUserByUsername(username string) (models.User, error)
+	EmailVerifiedTrue(email string) error
+}
+
+type UserRepo struct {
 	db *sql.DB
 }
 
-func NewUserRepository(cfg *config.Config) *UserRepository {
+func NewUserRepository(cfg *config.Config) *UserRepo {
 	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.UserDatabase.Host,
 		cfg.UserDatabase.Port,
@@ -31,10 +39,10 @@ func NewUserRepository(cfg *config.Config) *UserRepository {
 	if err != nil {
 		slog.Error("Failed to ping database:","error:", err, slog.String("UserRepositort:","ping failde"))
 	}
-	return &UserRepository{db: db}
+	return &UserRepo{db: db}
 }
 
-func (r *UserRepository) CreateUser(user models.User) error {
+func (r *UserRepo) CreateUser(user models.User) error {
 	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4)"
 	_, err := r.db.Exec(query, user.Username, user.Email, user.PasswordHash, user.Role)
 	if err != nil {
@@ -44,7 +52,7 @@ func (r *UserRepository) CreateUser(user models.User) error {
 	return nil
 }
 
-func (r *UserRepository) CreateGoogleUser(user models.User) error {
+func (r *UserRepo) CreateGoogleUser(user models.User) error {
 	query := "INSERT INTO users (username, email, google_id, role, email_verified) VALUES ($1, $2, $3, $4, $5)"
 	_, err := r.db.Exec(query, user.Username, user.Email, user.GoogleID, user.Role, user.IsVerified)
 	if err != nil {
@@ -54,7 +62,7 @@ func (r *UserRepository) CreateGoogleUser(user models.User) error {
 	return nil
 }
 
-func (r *UserRepository) GetUserByUsername(username string) (models.User, error) {
+func (r *UserRepo) GetUserByUsername(username string) (models.User, error) {
 	var user models.User
 	query := "SELECT id, username, email, password_hash, role FROM users WHERE username = $1"
 	err := r.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role)
@@ -65,7 +73,7 @@ func (r *UserRepository) GetUserByUsername(username string) (models.User, error)
 	return user, nil
 }
 
-func (r *UserRepository) GetUserByEmail(email string) (models.User, error) {
+func (r *UserRepo) GetUserByEmail(email string) (models.User, error) {
 	var user models.User
 	query := "SELECT id, username, email, password_hash, role FROM users WHERE email = $1"
 	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role)
@@ -79,7 +87,7 @@ func (r *UserRepository) GetUserByEmail(email string) (models.User, error) {
 	return user, nil
 }
 
-func (r *UserRepository) EmailVerifiedTrue(email string) error{
+func (r *UserRepo) EmailVerifiedTrue(email string) error{
 	query := "UPDATE users SET email_verified = true WHERE email = $1"
 	_, err := r.db.Exec(query, email)
 	if err != nil {

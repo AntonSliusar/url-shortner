@@ -8,22 +8,28 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type OTPRepository struct {
+type OTPRepository interface {
+	SaveOTP(email, purpose, code string, expiration time.Duration) error
+	GetOTP(email, purpose string) (string, error)
+	DeleteOTP(email, purpose string) error
+}
+
+type OTPRepo struct {
 	rdb *redis.Client
 }
 //TODO: add config to initialize redis client
-func NewOTPRepository() *OTPRepository { 
+func NewOTPRepository() *OTPRepo { 
 	rbd := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	return &OTPRepository{
+	return &OTPRepo{
 		rdb: rbd,
 	}
 }
 
-func (r *OTPRepository) SaveOTP(email, purpose, code string, expiration time.Duration) error {
+func (r *OTPRepo) SaveOTP(email, purpose, code string, expiration time.Duration) error {
 	key := buildKey(email, purpose)
 	err := r.rdb.Set(context.Background(), key, code, expiration).Err()
 	if err != nil {
@@ -33,7 +39,7 @@ func (r *OTPRepository) SaveOTP(email, purpose, code string, expiration time.Dur
 	return nil
 }
 
-func (r *OTPRepository) GetOPT(email, purpose string) (string, error) {
+func (r *OTPRepo) GetOTP(email, purpose string) (string, error) {
 	key := buildKey(email, purpose)
 	res, err := r.rdb.Get(context.Background(), key).Result()
 	if err == redis.Nil {
@@ -48,7 +54,7 @@ func (r *OTPRepository) GetOPT(email, purpose string) (string, error) {
 	return res, nil
 }
 
-func (r *OTPRepository) DeleteOTP(email, purpose string) error {
+func (r *OTPRepo) DeleteOTP(email, purpose string) error {
 	key := buildKey(email, purpose)
 	err := r.rdb.Del(context.Background(), key).Err()
 	if err != nil {

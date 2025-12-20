@@ -10,11 +10,11 @@ import (
 )
 
 type OTPService struct {
-	otpRepo *repository.OTPRepository
+	otpRepo repository.OTPRepository
 	emailSender EmailSender
 }
 
-func NewOTPService(otpRepo *repository.OTPRepository, emailSender EmailSender) *OTPService {
+func NewOTPService(otpRepo repository.OTPRepository, emailSender EmailSender) *OTPService {
 	return &OTPService{
 		otpRepo: otpRepo,
 		emailSender: emailSender,
@@ -41,7 +41,7 @@ func (s *OTPService) SendEmailCode(email, purpose string) error{
 }
 
 func (s *OTPService) VerifyEmailCode(email, purpose, inputCode string) (bool, error) {
-	storedCode, err := s.otpRepo.GetOPT(email, purpose)
+	storedCode, err := s.otpRepo.GetOTP(email, purpose)
 	if err != nil {
 		return false, err
 	}
