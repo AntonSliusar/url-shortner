@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"url-shortner/internal/models"
 	"url-shortner/internal/repository"
 )
@@ -30,3 +31,21 @@ func(s *UserService) EmailVerifiedTrue(email string) error {
 	return s.userRepo.EmailVerifiedTrue(email)
 }
 
+func (s *UserService) HandleGoogleUser(email, name, googleID string) (models.User, error) {
+	user, err := s.userRepo.GetUserByEmail(email)
+	if errors.Is(err, repository.ErrNotFound) {
+		newUser := models.User{
+			Email: email,
+			Username: name,
+			GoogleID: googleID,
+			Role: "user",
+			IsVerified: true,
+		}
+		err = s.userRepo.CreateGoogleUser(newUser)
+		user = newUser
+	}
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}

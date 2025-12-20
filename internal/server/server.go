@@ -24,6 +24,8 @@ func NewServer(urlHandler *handler.URLHandler, authHandler *auth.AuthHandler, cf
 	authRoutes.POST("/verify-registration", authHandler.VerifyRegistration)
 	authRoutes.POST("/login", authHandler.LoginUser)
 	authRoutes.POST("/verify-login", authHandler.VerifyLogin)
+	authRoutes.GET("/google/login", authHandler.GoogleLogin)
+	authRoutes.GET("/google/callback", authHandler.GoogleCallBack)
 
 	urlRoutes := e.Group("/urls", middleware.JWTMiddleware)
 	urlRoutes.POST("", urlHandler.SaveURL)

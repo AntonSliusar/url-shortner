@@ -9,9 +9,67 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/auth/google/callback": {
+            "get": {
+                "description": "Get token from Google, registration or login",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Google OAuth2 Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization code provided by Google",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "State string for CSRF protection",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/google/login": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login via Google",
+                "operationId": "google-login",
+                "responses": {
+                    "307": {
+                        "description": "Redirect to Google"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user and return JWT token",
+                "description": "Authenticate user and send code to email",
                 "consumes": [
                     "application/json"
                 ],
@@ -45,6 +103,24 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -112,7 +188,7 @@
         },
         "/auth/verify-login": {
             "post": {
-                "description": "Confirm login with email code",
+                "description": "Confirm login with email code and return JWT",
                 "consumes": [
                     "application/json"
                 ],
